@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Truco Online — 4 Jogadores</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:radial-gradient(circle at top,#174b32,#07140e 70%);color:#fff;min-height:100vh}
+header{text-align:center;padding:14px;background:#06110b;border-bottom:2px solid #d8b15a}
+h1{margin:0;color:#ffd86b}
+#app{max-width:1050px;margin:auto;padding:14px}
+.panel{background:#0d2418;border:1px solid #315b43;border-radius:12px;padding:12px;margin-bottom:10px}
+.top{display:flex;gap:10px;flex-wrap:wrap}
+.top .panel{flex:1;min-width:150px}
+.gold{color:#ffd86b}
+.teamColor{width:45px;height:40px;padding:2px;vertical-align:middle}
+.table{position:relative;min-height:600px;border-radius:22px;background:radial-gradient(circle,#237348,#0b3923);border:5px solid #5b351c;overflow:hidden}
+.seat{position:absolute;width:190px;text-align:center}
+.p1{bottom:10px;left:50%;transform:translateX(-50%)}
+.p2{top:15px;left:50%;transform:translateX(-50%)}
+.p3{left:8px;top:50%;transform:translateY(-50%)}
+.p4{right:8px;top:50%;transform:translateY(-50%)}
+.hand{display:flex;justify-content:center;gap:5px;min-height:90px}
+.card{width:58px;height:82px;background:#fff;color:#111;border-radius:8px;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:pointer;box-shadow:0 3px 6px #0008}
+.back{background:repeating-linear-gradient(45deg,#8d1720 0 5px,#d94a52 5px 8px);color:transparent}
+.center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:430px;max-width:85%;text-align:center}
+.played{min-height:150px;display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap}
+.message{min-height:45px;color:#ffeaa0;font-weight:bold}
+.vira{display:flex;justify-content:center;align-items:center;gap:10px;margin:8px}
+.vira .card{transform:rotate(3deg);width:62px;height:88px}
+.points{display:flex;justify-content:center;gap:30px;font-size:20px;margin:5px}
+button{border:0;border-radius:9px;padding:10px 14px;background:#d7a92d;color:#171006;font-weight:bold;cursor:pointer;margin:3px}
+button:hover{filter:brightness(1.1)}
+input{padding:10px;border-radius:8px;border:1px solid #50735d;background:#07140e;color:#fff;width:180px}
+#roomBox{text-align:center}
+.status{color:#bfe8c9}
+.log{max-height:120px;overflow:auto;font-size:13px;color:#c9dfd0}
+
+@media(max-width:700px){
+.table{min-height:680px}
+.seat{width:145px}
+.card{width:48px;height:70px;font-size:13px}
+.center{width:92%}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>🃏 TRUCO ONLINE — 4 JOGADORES</h1>
+</header>
+
+<div id="app">
+
+<div id="roomBox" class="panel">
+
+<b>Jogue com seus amigos</b><br>
+
+<input id="name" maxlength="14" placeholder="Seu nome">
+
+<label>
+Cor da equipe:
+<input id="teamColor" class="teamColor" type="color" value="#00c853">
+</label>
+
+<input id="room" maxlength="8" placeholder="Código da sala">
+
+<button id="createRoomBtn">Criar sala</button>
+<button id="joinRoomBtn">Entrar na sala</button>
+<button id="startOnlineBtn">▶ Iniciar partida</button>
+
+<div id="shareBox" style="display:none;margin-top:10px">
+
+<b>🔗 Link da sala:</b><br>
+
+<input id="shareLink" readonly style="width:80%;max-width:500px">
+
+<button id="copyLinkBtn">Copiar link</button>
+
+</div>
+
+<div id="status" class="status">
+Crie ou entre em uma sala.
+</div>
+
+</div>
+
+<div class="top">
+
+<div class="panel">
+🔵 Time 1:
+<b id="scoreA">0</b>
+</div>
+
+<div class="panel">
+🟠 Time 2:
+<b id="scoreB">0</b>
+</div>
+
+<div class="panel">
+Valor:
+<b id="handValue" class="gold">1</b>
+</div>
+
+<div class="panel">
+Vez:
+<b id="turnLabel">-</b>
+</div>
+
+</div>
+
+<div class="table">
+
+<div class="seat p1">
+<b id="name1">Jogador 1</b>
+<div id="hand1" class="hand"></div>
+</div>
+
+<div class="seat p2">
+<b id="name2">Jogador 2</b>
+<div id="hand2" class="hand"></div>
+</div>
+
+<div class="seat p3">
+<b id="name3">Jogador 3</b>
+<div id="hand3" class="hand"></div>
+</div>
+
+<div class="seat p4">
+<b id="name4">Jogador 4</b>
+<div id="hand4" class="hand"></div>
+</div>
+
+<div class="center">
+
+<div class="points">
+<span>
+Time 1:
+<b id="tableScoreA">0</b>
+</span>
+
+<span>
+Time 2:
+<b id="tableScoreB">0</b>
+</span>
+</div>
+
+<div class="vira">
+<b>VIRA</b>
+<div id="viraCard" class="card">🂠</div>
+</div>
+
+<div id="message" class="message">
+Crie ou entre em uma sala.
+</div>
+
+<div id="played" class="played"></div>
+
+<div id="controls">
+
+<button id="startLocalBtn">
+▶ Iniciar demonstração
+</button>
+
+<button onclick="pedirTruco()">
+🔥 TRUCO!
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="panel">
+
+Sala:
+<b id="roomCode">-</b>
+
+· Compartilhe o código ou o link com mais 3 amigos.
+
+Jogo casual, sem dinheiro nem apostas.
+
+</div>
+
+<div class="panel log" id="log"></div>
+
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+<script>
+
+const $=id=>document.getElementById(id);
+
+const names=[
+"Jogador 1",
+"Jogador 2",
+"Jogador 3",
+"Jogador 4"
+];
+
+const suits=[
+"♣",
+"♥",
+"♠",
+"♦"
+];
+
+const vals=[
+"4",
+"5",
+"6",
+"7",
+"Q",
+"J",
+"K",
+"A",
+"2",
+"3"
+];
+
+let peer=null;
+let host=false;
+let roomId="";
+let seat=-1;
+let state=null;
+let connections=[];
+
+function deck(){
+
+let d=[];
+
+for(const v of vals){
+
+for(const s of suits){
+
+d.push(v+s);
+
+}
+
+}
+
+return d.sort(()=>Math.random()-.5);
+
+}
+
+function code(){
+
+return Math.random()
+.toString(36)
+.slice(2,8)
+.toUpperCase();
+
+}
+
+function makeState(){
+
+let d=deck();
+
+let hands=[
+[],
+[],
+[],
+[]
+];
+
+let vira=d.pop();
+
+for(let i=0;i<3;i++){
+
+for(let p=0;p<4;p++){
+
+hands[p].push(d.pop());
+
+}
+
+}
+
+return{
+
+players:[
+null,
+null,
+null,
+null
+],
+
+hands:hands,
+
+played:[],
+
+vira:vira,
+
+turn:0,
+
+score:[
+0,
+0
+],
+
+value:1,
+
+started:false
+
+};
+
+}
+
+function showLink(){
+
+const u=new URL(location.href);
+
+u.searchParams.set(
+"sala",
+roomId
+);
+
+$("shareLink").value=u.toString();
+
+$("shareBox").style.display="block";
+
+$("roomCode").textContent=roomId;
+
+}
+
+function send(){
+
+const msg={
+type:"state",
+state:state
+};
+
+connections=
+connections.filter(c=>c.open);
+
+connections.forEach(c=>{
+c.send(msg);
+});
+
+}
+
+function render(){
+
+if(!state)return;
+
+$("scoreA").textContent=
+state.score[0];
+
+$("scoreB").textContent=
+state.score[1];
+
+$("tableScoreA").textContent=
+state.score[0];
+
+$("tableScoreB").textContent=
+state.score[1];
+
+$("handValue").textContent=
+state.value;
+
+$("turnLabel").textContent=
+state.players[state.turn]?.name ||
+names[state.turn];
+
+$("viraCard").textContent=
+state.vira || "🂠";
+
+for(let p=0;p<4;p++){
+
+if(state.players[p]){
+
+$("name"+(p+1)).textContent=
+state.players[p].name;
+
+$("name"+(p+1)).style.color=
+state.players[p].color || "#fff";
+
+}
+
+const el=$("hand"+(p+1));
+
+el.innerHTML="";
+
+(state.hands[p]||[]).forEach((c,i)=>{
+
+const d=document.createElement("div");
+
+d.className="card";
+
+if(p===seat){
+
+d.textContent=c;
+
+d.onclick=()=>play(i);
+
+}else{
+
+d.classList.add("back");
+
+d.textContent="🂠";
+
+}
+
+el.appendChild(d);
+
+});
+
+}
+
+$("played").innerHTML=
+state.played
+.map(x=>'<div class="card">'+x.card+'</div>')
+.join("");
+
+$("message").textContent=
+state.started
+?"Partida online em andamento."
+:"Aguardando o criador iniciar.";
+
+}
+
+function peerConfig(){
+
+return{
+
+config:{
+
+iceServers:[
+
+{
+urls:"stun:stun.l.google.com:19302"
+},
+
+{
+urls:"stun:global.stun.twilio.com:3478?transport=udp"
+}
+
+]
+
+}
+
+};
+
+}
+
+function setupConnection(c){
+
+connections.push(c);
+
+let timer=setTimeout(()=>{
+
+if(!c.open){
+
+$("status").textContent=
+"Conexão demorou. Tente usar o link da sala.";
+
+}
+
+},10000);
+
+c.on("open",()=>{
+
+clearTimeout(timer);
+
+if(host){
+
+c.send({
+
+type:"assigned",
+
+seat:c.seat ?? -1,
+
+state:state
+
+});
+
+}
+
+$("status").textContent=
+"Conectado à sala.";
+
+});
+
+c.on("error",()=>{
+
+$("status").textContent=
+"Erro na conexão. Confira o código da sala.";
+
+});
+
+c.on("close",()=>{
+
+$("status").textContent=
+host
+?"Um jogador saiu da sala."
+:"Conexão com o criador foi encerrada.";
+
+});
+
+c.on("data",data=>{
+
+const m=
+typeof data==="string"
+?JSON.parse(data)
+:data;
+
+if(host && m.type==="join"){
+
+const free=
+state.players.findIndex(p=>!p);
+
+if(free<0){
+
+c.send({
+type:"full"
+});
+
+return;
+
+}
+
+state.players[free]={
+
+name:m.name || "Jogador",
+
+color:m.color || "#ffffff"
+
+};
+
+c.seat=free;
+
+c.send({
+
+type:"assigned",
+
+seat:free,
+
+state:state
+
+});
+
+send();
+
+render();
+
+}
+
+else if(host && m.type==="action"){
+
+if(
+m.seat!==state.turn ||
+!state.started
+)return;
+
+if(m.action==="play"){
+
+const i=m.index;
+
+if(
+i<0 ||
+i>=state.hands[m.seat].length
+)return;
+
+const card=
+state.hands[m.seat].splice(i,1)[0];
+
+state.played.push({
+
+seat:m.seat,
+
+card:card
+
+});
+
+state.turn=
+(state.turn+1)%4;
+
+}
+
+if(m.action==="truco"){
+
+state.value=
+Math.min(
+12,
+state.value*3
+);
+
+}
+
+send();
+
+render();
+
+}
+
+else if(!host && m.type==="assigned"){
+
+seat=m.seat;
+
+state=m.state;
+
+showLink();
+
+$("status").textContent=
+"Você entrou na sala!";
+
+render();
+
+}
+
+else if(!host && m.type==="state"){
+
+state=m.state;
+
+render();
+
+}
+
+else if(m.type==="full"){
+
+$("status").textContent=
+"Sala cheia.";
+
+}
+
+});
+
+}
+
+function createRoom(){
+
+host=true;
+
+seat=0;
+
+roomId=code();
+
+state=makeState();
+
+state.players[0]={
+
+name:$("name").value ||
+"Jogador 1",
+
+color:$("teamColor").value
+
+};
+
+peer=new Peer(
+"truco-"+roomId,
+peerConfig()
+);
+
+peer.on("open",()=>{
+
+showLink();
+
+$("status").textContent=
+"Sala criada! Envie o link ou o código.";
+
+render();
+
+});
+
+peer.on("connection",c=>{
+
+setupConnection(c);
+
+});
+
+peer.on("error",e=>{
+
+$("status").textContent=
+e&&e.type==="unavailable-id"
+?"Sala já existe. Crie outra."
+:"Erro ao criar a sala.";
+
+});
+
+peer.on("disconnected",()=>{
+
+try{
+
+peer.reconnect();
+
+}catch(e){}
+
+});
+
+render();
+
+}
+
+function joinRoom(){
+
+roomId=
+$("room").value
+.trim()
+.toUpperCase();
+
+if(!roomId){
+
+$("status").textContent=
+"Digite o código da sala.";
+
+return;
+
+}
+
+if(peer){
+
+try{
+
+peer.destroy();
+
+}catch(e){}
+
+}
+
+host=false;
+
+seat=-1;
+
+connections=[];
+
+peer=new Peer(
+peerConfig()
+);
+
+peer.on("open",()=>{
+
+const c=
+peer.connect(
+"truco-"+roomId,
+{
+reliable:true,
+serialization:"json"
+}
+);
+
+setupConnection(c);
+
+c.on("open",()=>{
+
+c.send({
+
+type:"join",
+
+name:$("name").value ||
+"Jogador",
+
+color:$("teamColor").value
+
+});
+
+$("status").textContent=
+"Entrando na sala...";
+
+});
+
+c.on("error",()=>{
+
+$("status").textContent=
+"Não foi possível conectar ao criador da sala.";
+
+});
+
+});
+
+peer.on("error",e=>{
+
+$("status").textContent=
+e&&e.type==="peer-unavailable"
+?"Sala não encontrada. Confira o código."
+:"Erro ao entrar na sala.";
+
+});
+
+peer.on("disconnected",()=>{
+
+try{
+
+peer.reconnect();
+
+}catch(e){}
+
+});
+
+}
+
+function startOnline(){
+
+if(!host){
+
+$("status").textContent=
+"Somente quem criou a sala pode iniciar.";
+
+return;
+
+}
+
+state.started=true;
+
+send();
+
+render();
+
+}
+
+function play(i){
+
+if(
+!state ||
+!state.started ||
+state.turn!==seat
+)return;
+
+if(host){
+
+const card=
+state.hands[seat].splice(i,1)[0];
+
+state.played.push({
+
+seat:seat,
+
+card:card
+
+});
+
+state.turn=
+(state.turn+1)%4;
+
+send();
+
+render();
+
+}
+
+else if(
+connections[0] &&
+connections[0].open
+){
+
+connections[0].send(
+
+JSON.stringify({
+
+type:"action",
+
+action:"play",
+
+index:i,
+
+seat:seat
+
+})
+
+);
+
+}
+
+}
+
+function pedirTruco(){
+
+if(
+!state ||
+!state.started
+)return;
+
+if(host){
+
+state.value=
+Math.min(
+12,
+state.value*3
+);
+
+send();
+
+render();
+
+}
+
+else if(
+connections[0] &&
+connections[0].open
+){
+
+connections[0].send(
+
+JSON.stringify({
+
+type:"action",
+
+action:"truco",
+
+seat:seat
+
+})
+
+);
+
+}
+
+}
+
+$("createRoomBtn").onclick=
+createRoom;
+
+$("joinRoomBtn").onclick=
+joinRoom;
+
+$("startOnlineBtn").onclick=
+startOnline;
+
+$("copyLinkBtn").onclick=
+async()=>{
+
+await navigator.clipboard.writeText(
+$("shareLink").value
+);
+
+$("status").textContent=
+"Link copiado!";
+
+};
+
+const salaURL=
+new URLSearchParams(
+location.search
+).get("sala");
+
+if(salaURL){
+
+$("room").value=
+salaURL.toUpperCase();
+
+$("status").textContent=
+"Código da sala carregado. Digite seu nome e entre.";
+
+}
+
+window.criarSala=createRoom;
+
+window.entrarSala=joinRoom;
+
+window.pedirTruco=pedirTruco;
+
+</script>
+
+</body>
+</html>
